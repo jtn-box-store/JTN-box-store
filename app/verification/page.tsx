@@ -10,15 +10,14 @@ type Profile = {
   full_name: string;
 };
 
-const offers: Record<
-  string,
-  {
-    usd: number;
-    htg: number;
-    description: string;
-    features: string[];
-  }
-> = {
+type Offer = {
+  usd: number;
+  htg: number;
+  description: string;
+  features: string[];
+};
+
+const offers: Record<string, Offer> = {
   "1 MOIS": {
     usd: 3,
     htg: 390,
@@ -89,11 +88,7 @@ function VerificationContent() {
   const selectedPlan = searchParams.get("plan") || "";
   const offer = offers[selectedPlan];
 
-  const priceUSD = offer?.usd ?? 0;
-  const priceHTG = offer?.htg ?? 0;
-
   const [authChecked, setAuthChecked] = useState(false);
-
   const [userId, setUserId] = useState("");
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -101,7 +96,10 @@ function VerificationContent() {
   const [promoCode, setPromoCode] = useState("");
   const [promoMessage, setPromoMessage] = useState("");
 
-  // Vérifier si le client est connecté
+  const priceUSD = offer?.usd ?? 0;
+  const priceHTG = offer?.htg ?? 0;
+
+  // Vérification obligatoire de la connexion Google
   useEffect(() => {
     let active = true;
 
@@ -111,22 +109,33 @@ function VerificationContent() {
         return;
       }
 
-      const { data, error } = await supabase.auth.getSession();
+      try {
+        const { data, error } = await supabase.auth.getUser();
 
-      if (!active) return;
+        if (!active) return;
 
-      if (error || !data.session) {
+        if (error || !data.user) {
+          const destination =
+            `/verification?plan=${encodeURIComponent(selectedPlan)}`;
+
+          const loginUrl =
+            `/connexion?next=${encodeURIComponent(destination)}`;
+
+          window.location.replace(loginUrl);
+          return;
+        }
+
+        setAuthChecked(true);
+      } catch {
+        if (!active) return;
+
         const destination =
           `/verification?plan=${encodeURIComponent(selectedPlan)}`;
 
-        router.replace(
+        window.location.replace(
           `/connexion?next=${encodeURIComponent(destination)}`
         );
-
-        return;
       }
-
-      setAuthChecked(true);
     }
 
     checkLogin();
@@ -134,7 +143,7 @@ function VerificationContent() {
     return () => {
       active = false;
     };
-  }, [selectedPlan, offer, router]);
+  }, [selectedPlan, offer]);
 
   const formatMoney = (amount: number) =>
     new Intl.NumberFormat("fr-FR", {
@@ -165,7 +174,7 @@ function VerificationContent() {
       } else if (!data || data.length === 0) {
         setMessage("Aucun compte trouvé.");
       } else {
-        setProfile(data[0]);
+        setProfile(data[0] as Profile);
       }
     } catch {
       setMessage("Une erreur est survenue. Réessaie.");
@@ -191,14 +200,14 @@ function VerificationContent() {
       return;
     }
 
-    // Vérifier encore la session avant de continuer
-    const { data, error } = await supabase.auth.getSession();
+    // Nouvelle vérification avant de poursuivre
+    const { data, error } = await supabase.auth.getUser();
 
-    if (error || !data.session) {
+    if (error || !data.user) {
       const destination =
         `/verification?plan=${encodeURIComponent(selectedPlan)}`;
 
-      router.push(
+      window.location.replace(
         `/connexion?next=${encodeURIComponent(destination)}`
       );
 
@@ -220,7 +229,6 @@ function VerificationContent() {
     router.push(`/paiement?${params.toString()}`);
   }
 
-  // Écran de chargement pendant la vérification
   if (!authChecked) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#080808] text-white">
@@ -229,7 +237,7 @@ function VerificationContent() {
             Vérification de connexion...
           </p>
           <p className="mt-3 text-gray-400">
-            Préparation de ton abonnement JTN BOX.
+            Connexion Google requise pour continuer.
           </p>
         </div>
       </main>
@@ -243,11 +251,9 @@ function VerificationContent() {
           <h1 className="text-3xl font-black">
             Forfait introuvable
           </h1>
-
           <p className="mt-3 text-gray-400">
             Retourne choisir un abonnement.
           </p>
-
           <button
             onClick={() => router.push("/abonnements")}
             className="mt-6 rounded-full bg-red-600 px-7 py-4 font-bold"
@@ -267,17 +273,13 @@ function VerificationContent() {
           <p className="mb-3 text-sm font-bold tracking-[0.35em] text-red-500">
             JTN BOX STORE
           </p>
-
           <h1 className="text-3xl font-black">
             Vérification du compte
           </h1>
-
           <p className="mt-3 text-gray-400">
             Vérifie ton identifiant avant de continuer.
           </p>
         </div>
-
-        {/* FORFAIT ET INFORMATIONS */}
 
         <section className="rounded-3xl border border-yellow-600/40 bg-[#151515] p-6">
           <p className="text-sm font-bold uppercase tracking-widest text-yellow-500">
@@ -310,7 +312,6 @@ function VerificationContent() {
           <div className="my-5 border-t border-white/10" />
 
           <p className="text-gray-400">Prix en dollars</p>
-
           <p className="text-3xl font-black">
             {formatMoney(priceUSD)} $
           </p>
@@ -318,13 +319,10 @@ function VerificationContent() {
           <p className="mt-5 text-gray-400">
             Montant exact en gourdes
           </p>
-
           <p className="mt-1 text-3xl font-black text-yellow-400">
             {formatMoney(priceHTG)} GDS
           </p>
         </section>
-
-        {/* CODE PROMOTIONNEL */}
 
         <section className="mt-7 rounded-3xl border border-yellow-500/30 bg-[#151515] p-6">
           <h2 className="text-xl font-bold">
@@ -353,8 +351,6 @@ function VerificationContent() {
             </p>
           )}
         </section>
-
-        {/* IDENTIFIANT JTN */}
 
         <section className="mt-7 rounded-3xl border border-white/10 bg-[#151515] p-6">
           <h2 className="text-xl font-bold">
@@ -394,19 +390,15 @@ function VerificationContent() {
               <p className="font-bold text-green-400">
                 Compte trouvé !
               </p>
-
               <p className="mt-2 text-gray-300">
                 Nom : {profile.full_name}
               </p>
-
               <p className="text-gray-300">
                 Identifiant : {profile.jtn_id}
               </p>
             </div>
           )}
         </section>
-
-        {/* RÉCAPITULATIF */}
 
         {profile && (
           <section className="mt-7 rounded-3xl border border-yellow-500/40 bg-[#151515] p-6">
@@ -467,7 +459,6 @@ function VerificationContent() {
 
             <div className="flex items-center justify-between">
               <strong className="text-xl">TOTAL</strong>
-
               <strong className="text-2xl text-yellow-400">
                 {formatMoney(priceHTG)} GDS
               </strong>
@@ -481,7 +472,6 @@ function VerificationContent() {
             </button>
           </section>
         )}
-
       </div>
     </main>
   );
