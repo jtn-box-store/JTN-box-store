@@ -25,7 +25,7 @@ export default function AuthModal({
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/`,
+            emailRedirectTo: "https://jtn-box-store.vercel.app/",
           },
         });
         if (error) throw error;
@@ -52,20 +52,20 @@ export default function AuthModal({
   }
 
   async function handleGoogle() {
-    setLoading(true);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/`,
-      },
-    });
+  setLoading(true);
 
-    if (error) {
-      setMessage(error.message);
-      setLoading(false);
-    }
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: "https://jtn-box-store.vercel.app/",
+    },
+  });
+
+  if (error) {
+    setMessage(error.message);
+    setLoading(false);
   }
-
+}
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 px-4 backdrop-blur-sm">
       <div className="relative w-full max-w-md rounded-3xl border border-yellow-600/30 bg-[#101010] p-7 text-white shadow-2xl">
