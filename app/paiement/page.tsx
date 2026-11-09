@@ -642,46 +642,6 @@ function PaiementContent() {
               </p>
             </div>
 
-            {/* TEST GMAIL */}
-
-            <section className="mb-5 rounded-3xl border border-blue-200 bg-white p-6 shadow-sm">
-              <h2 className="text-xl font-black">
-                Tester l'envoi Gmail
-              </h2>
-
-              <p className="mt-2 text-sm text-gray-600">
-                Envoie un e-mail de test à christjustind@gmail.com
-                pour vérifier Resend.
-              </p>
-
-              <div className="mt-4 rounded-xl bg-blue-50 p-4 text-sm text-blue-800">
-                Ce test n'enregistre aucune commande, n'envoie aucune
-                preuve de paiement et n'active aucun abonnement.
-              </div>
-
-              <button
-                type="button"
-                onClick={sendTestEmail}
-                disabled={testLoading}
-                className="mt-5 w-full rounded-xl bg-blue-600 py-4 font-black text-white hover:bg-blue-700 disabled:opacity-60"
-              >
-                {testLoading
-                  ? "ENVOI DU TEST..."
-                  : "ENVOYER UN E-MAIL DE TEST"}
-              </button>
-
-              {testMessage && (
-                <p className="mt-4 rounded-xl bg-green-50 p-4 text-sm font-semibold text-green-700">
-                  {testMessage}
-                </p>
-              )}
-
-              {testError && (
-                <p className="mt-4 rounded-xl bg-red-50 p-4 text-sm font-semibold text-red-700">
-                  {testError}
-                </p>
-              )}
-            </section>
 
             {/* COORDONNÉES DE PAIEMENT */}
 
