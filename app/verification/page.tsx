@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
@@ -92,12 +92,49 @@ function VerificationContent() {
   const priceUSD = offer?.usd ?? 0;
   const priceHTG = offer?.htg ?? 0;
 
+  const [authChecked, setAuthChecked] = useState(false);
+
   const [userId, setUserId] = useState("");
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [message, setMessage] = useState("");
   const [promoCode, setPromoCode] = useState("");
   const [promoMessage, setPromoMessage] = useState("");
+
+  // Vérifier si le client est connecté
+  useEffect(() => {
+    let active = true;
+
+    async function checkLogin() {
+      if (!offer) {
+        setAuthChecked(true);
+        return;
+      }
+
+      const { data, error } = await supabase.auth.getSession();
+
+      if (!active) return;
+
+      if (error || !data.session) {
+        const destination =
+          `/verification?plan=${encodeURIComponent(selectedPlan)}`;
+
+        router.replace(
+          `/connexion?next=${encodeURIComponent(destination)}`
+        );
+
+        return;
+      }
+
+      setAuthChecked(true);
+    }
+
+    checkLogin();
+
+    return () => {
+      active = false;
+    };
+  }, [selectedPlan, offer, router]);
 
   const formatMoney = (amount: number) =>
     new Intl.NumberFormat("fr-FR", {
@@ -148,9 +185,23 @@ function VerificationContent() {
     );
   }
 
-  function confirmPurchase() {
+  async function confirmPurchase() {
     if (!offer) {
       setMessage("Cette offre est invalide.");
+      return;
+    }
+
+    // Vérifier encore la session avant de continuer
+    const { data, error } = await supabase.auth.getSession();
+
+    if (error || !data.session) {
+      const destination =
+        `/verification?plan=${encodeURIComponent(selectedPlan)}`;
+
+      router.push(
+        `/connexion?next=${encodeURIComponent(destination)}`
+      );
+
       return;
     }
 
@@ -169,6 +220,22 @@ function VerificationContent() {
     router.push(`/paiement?${params.toString()}`);
   }
 
+  // Écran de chargement pendant la vérification
+  if (!authChecked) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#080808] text-white">
+        <div className="text-center">
+          <p className="text-xl font-bold text-yellow-400">
+            Vérification de connexion...
+          </p>
+          <p className="mt-3 text-gray-400">
+            Préparation de ton abonnement JTN BOX.
+          </p>
+        </div>
+      </main>
+    );
+  }
+
   if (!offer) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#080808] px-5 text-white">
@@ -176,9 +243,11 @@ function VerificationContent() {
           <h1 className="text-3xl font-black">
             Forfait introuvable
           </h1>
+
           <p className="mt-3 text-gray-400">
             Retourne choisir un abonnement.
           </p>
+
           <button
             onClick={() => router.push("/abonnements")}
             className="mt-6 rounded-full bg-red-600 px-7 py-4 font-bold"
@@ -241,6 +310,7 @@ function VerificationContent() {
           <div className="my-5 border-t border-white/10" />
 
           <p className="text-gray-400">Prix en dollars</p>
+
           <p className="text-3xl font-black">
             {formatMoney(priceUSD)} $
           </p>
@@ -397,6 +467,7 @@ function VerificationContent() {
 
             <div className="flex items-center justify-between">
               <strong className="text-xl">TOTAL</strong>
+
               <strong className="text-2xl text-yellow-400">
                 {formatMoney(priceHTG)} GDS
               </strong>

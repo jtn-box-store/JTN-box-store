@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -24,9 +23,19 @@ export default function AuthCallbackPage() {
         return;
       }
 
-      setMessage("Connexion réussie !");
+      // Récupérer la destination après connexion
+      const params = new URLSearchParams(window.location.search);
+      const requestedNext = params.get("next");
 
-      router.replace("/");
+      const next =
+        requestedNext?.startsWith("/") &&
+        !requestedNext.startsWith("//")
+          ? requestedNext
+          : "/";
+
+      setMessage("Connexion réussie ! Redirection...");
+
+      router.replace(next);
     }
 
     finishLogin();
@@ -37,7 +46,7 @@ export default function AuthCallbackPage() {
   }, [router]);
 
   return (
-    <main className="min-h-screen bg-black text-white flex items-center justify-center">
+    <main className="flex min-h-screen items-center justify-center bg-black text-white">
       <p className="text-lg">{message}</p>
     </main>
   );
